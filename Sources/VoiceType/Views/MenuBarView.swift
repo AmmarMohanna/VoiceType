@@ -270,7 +270,7 @@ struct MenuBarView: View {
 
         let input = arabiziInput
         arabiziConversionTask = Task {
-            try? await Task.sleep(nanoseconds: 450_000_000)
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
             await refineArabizi(input)
         }
     }
