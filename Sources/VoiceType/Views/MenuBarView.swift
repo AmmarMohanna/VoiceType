@@ -5,6 +5,9 @@ struct MenuBarView: View {
     @State private var selectedTab: MenuTab = .voice
     @State private var arabiziInput = ""
     @State private var arabiziOutput = ""
+    @State private var arabiziStatus = ""
+    @State private var isArabiziRefining = false
+    @State private var arabiziConversionTask: Task<Void, Never>?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -142,7 +145,7 @@ struct MenuBarView: View {
                         .stroke(Color(nsColor: .separatorColor))
                 }
                 .onChange(of: arabiziInput) { _ in
-                    updateArabiziOutput()
+                    scheduleArabiziConversion()
                 }
 
             ScrollView {
@@ -164,7 +167,7 @@ struct MenuBarView: View {
 
             HStack(spacing: 8) {
                 Button {
-                    updateArabiziOutput()
+                    convertArabiziNow()
                 } label: {
                     Label("Convert", systemImage: "arrow.triangle.2.circlepath")
                         .frame(maxWidth: .infinity)
@@ -187,9 +190,17 @@ struct MenuBarView: View {
                 .help("Clear")
             }
 
-            Text("Examples: kifak, shu baddak, 3arabi, 7abibi, khaberni.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            HStack(spacing: 6) {
+                if isArabiziRefining {
+                    ProgressView()
+                        .controlSize(.small)
+                        .scaleEffect(0.65)
+                }
+
+                Text(arabiziFooterText)
+                    .font(.caption)
+                    .foregroundStyle(arabiziFooterColor)
+            }
         }
     }
 
@@ -237,8 +248,92 @@ struct MenuBarView: View {
         SettingsWindowController.shared.show(controller: controller)
     }
 
+    private var arabiziFooterText: String {
+        if !arabiziStatus.isEmpty {
+            return arabiziStatus
+        }
+
+        return "Examples: kifak, shu baddak, 3arabi, 7abibi, khaberni."
+    }
+
+    private var arabiziFooterColor: Color {
+        if arabiziStatus.isEmpty || arabiziStatus.hasPrefix("LLM refining") {
+            return .secondary
+        }
+
+        return .red
+    }
+
+    private func scheduleArabiziConversion() {
+        updateArabiziOutput()
+        arabiziConversionTask?.cancel()
+
+        let input = arabiziInput
+        arabiziConversionTask = Task {
+            try? await Task.sleep(nanoseconds: 450_000_000)
+            await refineArabizi(input)
+        }
+    }
+
+    private func convertArabiziNow() {
+        updateArabiziOutput()
+        arabiziConversionTask?.cancel()
+
+        let input = arabiziInput
+        arabiziConversionTask = Task {
+            await refineArabizi(input)
+        }
+    }
+
     private func updateArabiziOutput() {
         arabiziOutput = ArabiziTransliterator.convert(arabiziInput)
+        arabiziStatus = ""
+    }
+
+    @MainActor
+    private func refineArabizi(_ input: String) async {
+        let trimmedInput = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedInput.isEmpty else {
+            arabiziOutput = ""
+            arabiziStatus = ""
+            isArabiziRefining = false
+            return
+        }
+
+        let apiKey = AppSecrets.resolvedOpenAIAPIKey
+        guard !apiKey.isEmpty else {
+            arabiziStatus = "Missing API key; showing local conversion."
+            isArabiziRefining = false
+            return
+        }
+
+        isArabiziRefining = true
+        arabiziStatus = "LLM refining with \(AppSecrets.arabiziModel)..."
+
+        do {
+            let refined = try await OpenAIArabiziTransliterator.convert(
+                trimmedInput,
+                apiKey: apiKey,
+                model: AppSecrets.arabiziModel
+            )
+
+            guard !Task.isCancelled, trimmedInput == arabiziInput.trimmingCharacters(in: .whitespacesAndNewlines) else {
+                return
+            }
+
+            if !refined.isEmpty {
+                arabiziOutput = refined
+            }
+            arabiziStatus = ""
+        } catch {
+            guard !Task.isCancelled else {
+                return
+            }
+
+            arabiziStatus = "LLM unavailable; showing local conversion."
+        }
+
+        isArabiziRefining = false
     }
 
     private func copyArabiziOutput() {
@@ -251,8 +346,11 @@ struct MenuBarView: View {
     }
 
     private func clearArabizi() {
+        arabiziConversionTask?.cancel()
         arabiziInput = ""
         arabiziOutput = ""
+        arabiziStatus = ""
+        isArabiziRefining = false
     }
 }
 

@@ -8,7 +8,7 @@ A minimal macOS menu-bar dictation app.
 - Option-Space toggles recording.
 - Final transcript is copied to the clipboard when recording stops.
 - Settings include Fast, Accurate, and Polished modes.
-- Arabizi tab converts Latin/Arabizi text like `kifak`, `3arabi`, and `7abibi` into Arabic text.
+- Arabizi tab converts Latin/Arabizi text like `kifak`, `3arabi`, and `7abibi` into Arabic text, then refines it with a fast OpenAI model when available.
 - Start at login is implemented with a LaunchAgent for the packaged app.
 
 ## API key
@@ -31,6 +31,7 @@ Then edit `.env`:
 
 ```env
 OPENAI_API_KEY=sk-...
+ARABIZI_MODEL=gpt-5.4-nano
 ```
 
 `.env` is ignored by Git and is copied into the local app bundle during build.

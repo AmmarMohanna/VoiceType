@@ -16,12 +16,29 @@ enum AppSecrets {
 
         return openAIAPIKey
     }
+
+    static var arabiziModel: String {
+        let environmentModel = ProcessInfo.processInfo.environment["ARABIZI_MODEL"] ?? ""
+        if !environmentModel.isEmpty {
+            return environmentModel
+        }
+
+        if let dotenvModel = Dotenv.value(named: "ARABIZI_MODEL"), !dotenvModel.isEmpty {
+            return dotenvModel
+        }
+
+        return "gpt-5.4-nano"
+    }
 }
 
 private enum Dotenv {
     static func openAIAPIKey() -> String? {
+        value(named: "OPENAI_API_KEY")
+    }
+
+    static func value(named name: String) -> String? {
         for url in candidateURLs() {
-            guard let value = value(named: "OPENAI_API_KEY", in: url), !value.isEmpty else {
+            guard let value = value(named: name, in: url), !value.isEmpty else {
                 continue
             }
 
