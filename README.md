@@ -14,11 +14,25 @@ A minimal macOS menu-bar dictation app.
 
 The app reads the key in this order:
 
-- macOS Keychain, configured from the app Settings window.
 - `OPENAI_API_KEY`, useful while developing from Terminal.
+- `.env` bundled into the local app by `Scripts/build-app.sh`.
+- `.env` in the current directory when running from Terminal.
+- `~/.voicetype/.env`, useful if you want one shared local config.
 - `AppSecrets.openAIAPIKey`, intentionally blank in source control.
 
-Do not commit a real API key.
+Create a local `.env` file:
+
+```sh
+cp .env.example .env
+```
+
+Then edit `.env`:
+
+```env
+OPENAI_API_KEY=sk-...
+```
+
+`.env` is ignored by Git and is copied into the local app bundle during build.
 
 ## Build
 

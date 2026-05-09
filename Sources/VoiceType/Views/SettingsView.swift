@@ -2,8 +2,6 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var controller: DictationController
-    @State private var apiKeyDraft = ""
-    @State private var apiKeyMessage = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -50,25 +48,13 @@ struct SettingsView: View {
                         .foregroundStyle(AppSecrets.resolvedOpenAIAPIKey.isEmpty ? .red : .secondary)
                 }
 
-                HStack(spacing: 8) {
-                    SecureField("sk-...", text: $apiKeyDraft)
-                        .textFieldStyle(.roundedBorder)
-
-                    Button("Save") {
-                        saveAPIKey()
-                    }
-                }
-
-                Text(apiKeyMessage.isEmpty ? "Stored locally in macOS Keychain." : apiKeyMessage)
+                Text("Loaded from local .env. This file is ignored by Git.")
                     .font(.caption)
-                    .foregroundStyle(apiKeyMessage.hasPrefix("Error") ? .red : .secondary)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(20)
-        .frame(width: 430, height: 350, alignment: .topLeading)
-        .onAppear {
-            apiKeyDraft = KeychainStore.readOpenAIAPIKey()
-        }
+        .frame(width: 430, height: 300, alignment: .topLeading)
     }
 
     private var modeBinding: Binding<DictationMode> {
@@ -92,17 +78,6 @@ struct SettingsView: View {
             controller.launchAtLogin
         } set: { newValue in
             controller.setLaunchAtLogin(newValue)
-        }
-    }
-
-    private func saveAPIKey() {
-        do {
-            try KeychainStore.saveOpenAIAPIKey(apiKeyDraft)
-            apiKeyMessage = apiKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                ? "API key cleared."
-                : "API key saved."
-        } catch {
-            apiKeyMessage = "Error: \(error.localizedDescription)"
         }
     }
 }

@@ -18,9 +18,9 @@ final class SettingsWindowController {
             let window = NSWindow(contentViewController: hostingController)
             window.title = "VoiceType Settings"
             window.styleMask = [.titled, .closable, .miniaturizable]
-            window.setContentSize(NSSize(width: 430, height: 350))
-            window.contentMinSize = NSSize(width: 430, height: 350)
-            window.contentMaxSize = NSSize(width: 430, height: 350)
+            window.setContentSize(NSSize(width: 430, height: 300))
+            window.contentMinSize = NSSize(width: 430, height: 300)
+            window.contentMaxSize = NSSize(width: 430, height: 300)
             window.isReleasedWhenClosed = false
             window.center()
             self.window = window
