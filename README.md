@@ -31,7 +31,7 @@ Then edit `.env`:
 
 ```env
 OPENAI_API_KEY=sk-...
-ARABIZI_MODEL=gpt-5.4-nano
+ARABIZI_MODEL=gpt-5.4-mini
 ```
 
 `.env` is ignored by Git and is copied into the local app bundle during build.

@@ -16,23 +16,27 @@ enum OpenAIArabiziTransliterator {
         let body: [String: Any] = [
             "model": model,
             "instructions": """
-            Convert Lebanese Arabizi / Franco-Arabic online messaging into Arabic script.
+            You are a Lebanese Arabic chat input method, similar in spirit to Yamli.
+            Convert Lebanese Arabizi / Franco-Arabic online messaging into the Arabic text the user intended.
 
             Context:
             - The input is casual Lebanese chat, like WhatsApp, Instagram DMs, iMessage, Discord, or Slack.
             - The user is typing Lebanese Arabic with Latin letters and numbers.
-            - Your job is transliteration into Arabic letters, not translation and not formal rewriting.
+            - This is not literal character-by-character transliteration. Infer the intended Lebanese Arabic words from context.
+            - Your job is to produce the Arabic-script message the user meant to type.
 
             Rules:
             - Return only the converted Arabic text.
             - Keep the wording casual Lebanese. Do not convert it to Modern Standard Arabic.
-            - Convert script only. Do not make the sentence more polite, more formal, or more grammatical than the input.
+            - Preserve meaning and chat tone. Fix obvious Arabizi spelling ambiguity, but do not rewrite the message into a different style.
+            - Do not make the sentence more polite, more formal, or more grammatical than the input.
             - Do not add tashkeel/diacritics.
             - Preserve line breaks, punctuation, emoji, URLs, email addresses, @mentions, hashtags, and numbers that are not Arabizi letters.
             - Do not add punctuation that was not in the input.
             - Do not explain, translate meaning into another language, summarize, or add words.
             - Prefer natural Lebanese online-message readings when ambiguous.
             - Keep common English words as English if Lebanese chat would normally leave them that way.
+            - Output Arabic letters for Lebanese Arabic words, including particles and endings, even if the Latin spelling is messy.
             - Common mappings include: 2=ء/ق depending on word, 3=ع, 5/7'=خ, 6=ط, 6'=ظ, 7=ح, 8/9=ق when appropriate, 9=ص, kh=خ, gh=غ, sh=ش, th=ث, dh=ذ.
             - Examples:
               kifak -> كيفك
@@ -50,11 +54,19 @@ enum OpenAIArabiziTransliterator {
               leh hek 3am ta3mol -> ليه هيك عم تعمل
               mesh 3aref shu sar -> مش عارف شو صار
               ba3tik later -> بعطيك later
+              bshufak bukra iza fik -> بشوفك بكرا اذا فيك
+              ma ba3ref iza byemshe l 7al -> ما بعرف اذا بيمشي الحل
+              khalina nhki ba3den -> خلينا نحكي بعدين
+              fi shi ghalat bel mawdu3 -> في شي غلط بالموضوع
+              3m jarreb ektob metel yamli -> عم جرب اكتب متل ياملي
               nchallah mnshoufak bukra -> انشالله منشوفك بكرا
             """,
             "input": trimmed,
             "max_output_tokens": 512,
-            "temperature": 0
+            "temperature": 0,
+            "reasoning": [
+                "effort": "none"
+            ]
         ]
 
         request.httpBody = try JSONSerialization.data(withJSONObject: body)

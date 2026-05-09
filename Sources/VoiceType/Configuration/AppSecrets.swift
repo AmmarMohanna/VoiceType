@@ -27,7 +27,7 @@ enum AppSecrets {
             return dotenvModel
         }
 
-        return "gpt-5.4-nano"
+        return "gpt-5.4-mini"
     }
 }
 
