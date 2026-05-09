@@ -167,11 +167,12 @@ struct MenuBarView: View {
 
             HStack(spacing: 8) {
                 Button {
-                    convertArabiziNow()
+                    clearArabizi()
                 } label: {
-                    Label("Convert", systemImage: "arrow.triangle.2.circlepath")
+                    Label("Clear", systemImage: "xmark")
                         .frame(maxWidth: .infinity)
                 }
+                .disabled(arabiziInput.isEmpty && arabiziOutput.isEmpty && arabiziStatus.isEmpty)
 
                 Button {
                     copyArabiziOutput()
@@ -182,12 +183,12 @@ struct MenuBarView: View {
                 .disabled(arabiziOutput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
                 Button {
-                    clearArabizi()
+                    showSettings()
                 } label: {
-                    Image(systemName: "xmark")
+                    Image(systemName: "gearshape")
                         .frame(width: 30)
                 }
-                .help("Clear")
+                .help("Settings")
             }
 
             HStack(spacing: 6) {
@@ -271,16 +272,6 @@ struct MenuBarView: View {
         let input = arabiziInput
         arabiziConversionTask = Task {
             try? await Task.sleep(nanoseconds: 1_200_000_000)
-            await refineArabizi(input)
-        }
-    }
-
-    private func convertArabiziNow() {
-        updateArabiziOutput()
-        arabiziConversionTask?.cancel()
-
-        let input = arabiziInput
-        arabiziConversionTask = Task {
             await refineArabizi(input)
         }
     }
