@@ -2,6 +2,14 @@
 
 A minimal macOS menu-bar dictation app.
 
+## Background workflow
+
+VoiceType is designed to stay out of the way. Launch it once and it lives in the macOS menu bar while you work in any app.
+
+Press `Option-Space` from anywhere to start recording, speak naturally, then press `Option-Space` again to stop. VoiceType transcribes in the background and copies the final text to your clipboard automatically.
+
+That keeps the flow simple: shortcut, speak, stop, paste.
+
 ## MVP behavior
 
 - Menu-bar app with Start, Stop, Copy, and Settings.
