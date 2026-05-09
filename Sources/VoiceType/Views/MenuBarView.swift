@@ -2,16 +2,24 @@ import SwiftUI
 
 struct MenuBarView: View {
     @ObservedObject var controller: DictationController
+    @State private var selectedTab: MenuTab = .voice
+    @State private var arabiziInput = ""
+    @State private var arabiziOutput = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             header
-            transcriptView
-            controls
-            footer
+            tabPicker
+
+            switch selectedTab {
+            case .voice:
+                voiceContent
+            case .arabizi:
+                arabiziContent
+            }
         }
         .padding(14)
-        .frame(width: 360)
+        .frame(width: 390)
     }
 
     private var header: some View {
@@ -26,9 +34,26 @@ struct MenuBarView: View {
 
             Spacer()
 
-            Text(controller.mode.label)
+            Text(selectedTab == .voice ? controller.mode.label : "Arabizi")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+        }
+    }
+
+    private var tabPicker: some View {
+        Picker("Tool", selection: $selectedTab) {
+            Label("Voice", systemImage: "mic").tag(MenuTab.voice)
+            Label("Arabizi", systemImage: "character.cursor.ibeam").tag(MenuTab.arabizi)
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+    }
+
+    private var voiceContent: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            transcriptView
+            controls
+            footer
         }
     }
 
@@ -104,6 +129,70 @@ struct MenuBarView: View {
         }
     }
 
+    private var arabiziContent: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            TextEditor(text: $arabiziInput)
+                .font(.body)
+                .frame(height: 92)
+                .scrollContentBackground(.hidden)
+                .background(Color(nsColor: .textBackgroundColor))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color(nsColor: .separatorColor))
+                }
+                .onChange(of: arabiziInput) { _ in
+                    updateArabiziOutput()
+                }
+
+            ScrollView {
+                Text(arabiziOutput.isEmpty ? "اكتب Arabizi فوق..." : arabiziOutput)
+                    .font(.title3)
+                    .foregroundStyle(arabiziOutput.isEmpty ? .secondary : .primary)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .textSelection(.enabled)
+                    .padding(10)
+                    .environment(\.layoutDirection, .rightToLeft)
+            }
+            .frame(height: 92)
+            .background(Color(nsColor: .textBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay {
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color(nsColor: .separatorColor))
+            }
+
+            HStack(spacing: 8) {
+                Button {
+                    updateArabiziOutput()
+                } label: {
+                    Label("Convert", systemImage: "arrow.triangle.2.circlepath")
+                        .frame(maxWidth: .infinity)
+                }
+
+                Button {
+                    copyArabiziOutput()
+                } label: {
+                    Label("Copy", systemImage: "doc.on.doc")
+                        .frame(maxWidth: .infinity)
+                }
+                .disabled(arabiziOutput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+                Button {
+                    clearArabizi()
+                } label: {
+                    Image(systemName: "xmark")
+                        .frame(width: 30)
+                }
+                .help("Clear")
+            }
+
+            Text("Examples: kifak, shu baddak, 3arabi, 7abibi, khaberni.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
     private var transcriptText: String {
         if !controller.transcript.isEmpty {
             return controller.transcript
@@ -147,4 +236,27 @@ struct MenuBarView: View {
     private func showSettings() {
         SettingsWindowController.shared.show(controller: controller)
     }
+
+    private func updateArabiziOutput() {
+        arabiziOutput = ArabiziTransliterator.convert(arabiziInput)
+    }
+
+    private func copyArabiziOutput() {
+        let text = arabiziOutput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else {
+            return
+        }
+
+        ClipboardService.copy(text)
+    }
+
+    private func clearArabizi() {
+        arabiziInput = ""
+        arabiziOutput = ""
+    }
+}
+
+private enum MenuTab {
+    case voice
+    case arabizi
 }

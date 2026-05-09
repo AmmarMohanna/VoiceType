@@ -8,6 +8,7 @@ A minimal macOS menu-bar dictation app.
 - Option-Space toggles recording.
 - Final transcript is copied to the clipboard when recording stops.
 - Settings include Fast, Accurate, and Polished modes.
+- Arabizi tab converts Latin/Arabizi text like `kifak`, `3arabi`, and `7abibi` into Arabic text.
 - Start at login is implemented with a LaunchAgent for the packaged app.
 
 ## API key
