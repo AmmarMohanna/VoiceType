@@ -149,7 +149,7 @@ struct MenuBarView: View {
                 }
 
             ScrollView {
-                Text(arabiziOutput.isEmpty ? "اكتب Arabizi فوق..." : arabiziOutput)
+                Text(arabiziOutput.isEmpty ? "اكتب Arabizi فوق..." : formattedArabiziOutput)
                     .font(.title3)
                     .foregroundStyle(arabiziOutput.isEmpty ? .secondary : .primary)
                     .frame(maxWidth: .infinity, alignment: .trailing)
@@ -265,6 +265,10 @@ struct MenuBarView: View {
         return .red
     }
 
+    private var formattedArabiziOutput: String {
+        BidiTextFormatter.prepareMixedArabicEnglish(arabiziOutput)
+    }
+
     private func scheduleArabiziConversion() {
         updateArabiziOutput()
         arabiziConversionTask?.cancel()
@@ -328,7 +332,7 @@ struct MenuBarView: View {
     }
 
     private func copyArabiziOutput() {
-        let text = arabiziOutput.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = formattedArabiziOutput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else {
             return
         }

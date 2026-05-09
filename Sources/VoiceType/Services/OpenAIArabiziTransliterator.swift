@@ -36,6 +36,8 @@ enum OpenAIArabiziTransliterator {
             - Do not explain, translate meaning into another language, summarize, or add words.
             - Prefer natural Lebanese online-message readings when ambiguous.
             - Keep common English words as English if Lebanese chat would normally leave them that way.
+            - Always put normal spaces between Arabic words and English words. Do not glue them together.
+            - If an Arabic prefix points to an English word, keep a space: hal tool -> هال tool, not هالtool.
             - Output Arabic letters for Lebanese Arabic words, including particles and endings, even if the Latin spelling is messy.
             - Common mappings include: 2=ء/ق depending on word, 3=ع, 5/7'=خ, 6=ط, 6'=ظ, 7=ح, 8/9=ق when appropriate, 9=ص, kh=خ, gh=غ, sh=ش, th=ث, dh=ذ.
             - Examples:
