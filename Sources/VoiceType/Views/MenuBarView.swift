@@ -8,8 +8,6 @@ struct MenuBarView: View {
     @State private var arabiziStatus = ""
     @State private var isArabiziRefining = false
     @State private var isArabiziImproving = false
-    @State private var yamliReady = false
-    @State private var yamliFailed = false
     @State private var arabiziConversionTask: Task<Void, Never>?
 
     var body: some View {
@@ -137,21 +135,7 @@ struct MenuBarView: View {
 
     private var arabiziContent: some View {
         VStack(alignment: .leading, spacing: 10) {
-            if yamliFailed {
-                fallbackArabiziEditor
-            } else {
-                YamliEditorView(
-                    text: $arabiziOutput,
-                    isReady: $yamliReady,
-                    didFail: $yamliFailed
-                )
-                .frame(height: 194)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color(nsColor: .separatorColor))
-                }
-            }
+            arabiziEditor
 
             HStack(spacing: 8) {
                 Button {
@@ -201,7 +185,7 @@ struct MenuBarView: View {
         }
     }
 
-    private var fallbackArabiziEditor: some View {
+    private var arabiziEditor: some View {
         VStack(alignment: .leading, spacing: 10) {
             TextEditor(text: $arabiziInput)
                 .font(.body)
@@ -285,23 +269,18 @@ struct MenuBarView: View {
             return arabiziStatus
         }
 
-        if yamliFailed {
-            return "Yamli unavailable; using LLM fallback after 1.2s."
-        }
-
-        if yamliReady {
-            return "Yamli live conversion. Improve with LLM only when needed."
-        }
-
-        return "Examples: kifak, shu baddak, 3arabi, 7abibi, khaberni."
+        return "Yamli converts after 1.2s. Improve with LLM only when needed."
     }
 
     private var arabiziFooterColor: Color {
-        if arabiziStatus.isEmpty || arabiziStatus.hasPrefix("LLM") || arabiziStatus.hasPrefix("Improving") {
-            return .secondary
+        let lowercasedStatus = arabiziStatus.lowercased()
+        if lowercasedStatus.contains("missing")
+            || lowercasedStatus.contains("failed")
+            || lowercasedStatus.contains("unavailable") {
+            return .red
         }
 
-        return .red
+        return .secondary
     }
 
     private var formattedArabiziOutput: String {
@@ -315,13 +294,48 @@ struct MenuBarView: View {
         let input = arabiziInput
         arabiziConversionTask = Task {
             try? await Task.sleep(nanoseconds: 1_200_000_000)
-            await refineArabizi(input)
+            await convertArabiziWithYamli(input)
         }
     }
 
     private func updateArabiziOutput() {
         arabiziOutput = ArabiziTransliterator.convert(arabiziInput)
         arabiziStatus = ""
+    }
+
+    @MainActor
+    private func convertArabiziWithYamli(_ input: String) async {
+        let trimmedInput = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedInput.isEmpty else {
+            arabiziOutput = ""
+            arabiziStatus = ""
+            isArabiziRefining = false
+            return
+        }
+
+        isArabiziRefining = true
+        arabiziStatus = "Yamli converting..."
+
+        do {
+            let converted = try await YamliTransliterator.convert(trimmedInput)
+
+            guard !Task.isCancelled, trimmedInput == arabiziInput.trimmingCharacters(in: .whitespacesAndNewlines) else {
+                return
+            }
+
+            if !converted.isEmpty {
+                arabiziOutput = converted
+            }
+            arabiziStatus = ""
+            isArabiziRefining = false
+        } catch {
+            guard !Task.isCancelled else {
+                return
+            }
+
+            arabiziStatus = "Yamli unavailable; using LLM fallback..."
+            await refineArabizi(input)
+        }
     }
 
     @MainActor
