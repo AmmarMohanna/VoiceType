@@ -269,7 +269,7 @@ struct MenuBarView: View {
             return arabiziStatus
         }
 
-        return "Yamli converts after 1.2s. Improve with LLM only when needed."
+        return "Yamli converts after 0.5s. Improve with LLM only when needed."
     }
 
     private var arabiziFooterColor: Color {
@@ -293,7 +293,7 @@ struct MenuBarView: View {
 
         let input = arabiziInput
         arabiziConversionTask = Task {
-            try? await Task.sleep(nanoseconds: 1_200_000_000)
+            try? await Task.sleep(nanoseconds: 500_000_000)
             await convertArabiziWithYamli(input)
         }
     }
