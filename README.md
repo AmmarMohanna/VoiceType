@@ -16,7 +16,7 @@ That keeps the flow simple: shortcut, speak, stop, paste.
 - Option-Space toggles recording.
 - Final transcript is copied to the clipboard when recording stops.
 - Settings include Fast, Accurate, and Polished modes.
-- Arabizi tab converts Lebanese online-message Arabizi like `kifak`, `3arabi`, and `7abibi` into Arabic text, then refines it with a fast OpenAI model when available.
+- Arabizi tab uses Yamli for live Lebanese/Arabic transliteration, falls back to an OpenAI model if Yamli is unavailable, and includes an optional stronger "Improve with LLM" pass.
 - Start at login is implemented with a LaunchAgent for the packaged app.
 
 ## API key
@@ -40,6 +40,7 @@ Then edit `.env`:
 ```env
 OPENAI_API_KEY=sk-...
 ARABIZI_MODEL=gpt-5.4-mini
+ARABIZI_IMPROVE_MODEL=gpt-5.4
 ```
 
 `.env` is ignored by Git and is copied into the local app bundle during build.

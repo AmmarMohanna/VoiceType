@@ -7,6 +7,9 @@ struct MenuBarView: View {
     @State private var arabiziOutput = ""
     @State private var arabiziStatus = ""
     @State private var isArabiziRefining = false
+    @State private var isArabiziImproving = false
+    @State private var yamliReady = false
+    @State private var yamliFailed = false
     @State private var arabiziConversionTask: Task<Void, Never>?
 
     var body: some View {
@@ -134,6 +137,72 @@ struct MenuBarView: View {
 
     private var arabiziContent: some View {
         VStack(alignment: .leading, spacing: 10) {
+            if yamliFailed {
+                fallbackArabiziEditor
+            } else {
+                YamliEditorView(
+                    text: $arabiziOutput,
+                    isReady: $yamliReady,
+                    didFail: $yamliFailed
+                )
+                .frame(height: 194)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color(nsColor: .separatorColor))
+                }
+            }
+
+            HStack(spacing: 8) {
+                Button {
+                    clearArabizi()
+                } label: {
+                    Label("Clear", systemImage: "xmark")
+                        .frame(maxWidth: .infinity)
+                }
+                .disabled(arabiziInput.isEmpty && arabiziOutput.isEmpty && arabiziStatus.isEmpty)
+
+                Button {
+                    copyArabiziOutput()
+                } label: {
+                    Label("Copy", systemImage: "doc.on.doc")
+                        .frame(maxWidth: .infinity)
+                }
+                .disabled(arabiziOutput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+                Button {
+                    showSettings()
+                } label: {
+                    Image(systemName: "gearshape")
+                        .frame(width: 30)
+                }
+                .help("Settings")
+            }
+
+            Button {
+                improveArabiziWithLLM()
+            } label: {
+                Label("Improve with LLM", systemImage: "sparkles")
+                    .frame(maxWidth: .infinity)
+            }
+            .disabled(arabiziOutput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isArabiziImproving)
+
+            HStack(spacing: 6) {
+                if isArabiziRefining || isArabiziImproving {
+                    ProgressView()
+                        .controlSize(.small)
+                        .scaleEffect(0.65)
+                }
+
+                Text(arabiziFooterText)
+                    .font(.caption)
+                    .foregroundStyle(arabiziFooterColor)
+            }
+        }
+    }
+
+    private var fallbackArabiziEditor: some View {
+        VStack(alignment: .leading, spacing: 10) {
             TextEditor(text: $arabiziInput)
                 .font(.body)
                 .frame(height: 92)
@@ -163,44 +232,6 @@ struct MenuBarView: View {
             .overlay {
                 RoundedRectangle(cornerRadius: 8)
                     .stroke(Color(nsColor: .separatorColor))
-            }
-
-            HStack(spacing: 8) {
-                Button {
-                    clearArabizi()
-                } label: {
-                    Label("Clear", systemImage: "xmark")
-                        .frame(maxWidth: .infinity)
-                }
-                .disabled(arabiziInput.isEmpty && arabiziOutput.isEmpty && arabiziStatus.isEmpty)
-
-                Button {
-                    copyArabiziOutput()
-                } label: {
-                    Label("Copy", systemImage: "doc.on.doc")
-                        .frame(maxWidth: .infinity)
-                }
-                .disabled(arabiziOutput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-
-                Button {
-                    showSettings()
-                } label: {
-                    Image(systemName: "gearshape")
-                        .frame(width: 30)
-                }
-                .help("Settings")
-            }
-
-            HStack(spacing: 6) {
-                if isArabiziRefining {
-                    ProgressView()
-                        .controlSize(.small)
-                        .scaleEffect(0.65)
-                }
-
-                Text(arabiziFooterText)
-                    .font(.caption)
-                    .foregroundStyle(arabiziFooterColor)
             }
         }
     }
@@ -254,11 +285,19 @@ struct MenuBarView: View {
             return arabiziStatus
         }
 
+        if yamliFailed {
+            return "Yamli unavailable; using LLM fallback after 1.2s."
+        }
+
+        if yamliReady {
+            return "Yamli live conversion. Improve with LLM only when needed."
+        }
+
         return "Examples: kifak, shu baddak, 3arabi, 7abibi, khaberni."
     }
 
     private var arabiziFooterColor: Color {
-        if arabiziStatus.isEmpty || arabiziStatus.hasPrefix("LLM refining") {
+        if arabiziStatus.isEmpty || arabiziStatus.hasPrefix("LLM") || arabiziStatus.hasPrefix("Improving") {
             return .secondary
         }
 
@@ -331,6 +370,57 @@ struct MenuBarView: View {
         isArabiziRefining = false
     }
 
+    private func improveArabiziWithLLM() {
+        arabiziConversionTask?.cancel()
+
+        let text = arabiziOutput
+        arabiziConversionTask = Task {
+            await improveArabizi(text)
+        }
+    }
+
+    @MainActor
+    private func improveArabizi(_ input: String) async {
+        let trimmedInput = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedInput.isEmpty else {
+            return
+        }
+
+        let apiKey = AppSecrets.resolvedOpenAIAPIKey
+        guard !apiKey.isEmpty else {
+            arabiziStatus = "Missing API key; cannot improve with LLM."
+            return
+        }
+
+        isArabiziImproving = true
+        arabiziStatus = "Improving with \(AppSecrets.arabiziImproveModel)..."
+
+        do {
+            let improved = try await OpenAIArabiziTransliterator.improve(
+                trimmedInput,
+                apiKey: apiKey,
+                model: AppSecrets.arabiziImproveModel
+            )
+
+            guard !Task.isCancelled else {
+                return
+            }
+
+            if !improved.isEmpty {
+                arabiziOutput = improved
+            }
+            arabiziStatus = ""
+        } catch {
+            guard !Task.isCancelled else {
+                return
+            }
+
+            arabiziStatus = "Improve failed; keeping current text."
+        }
+
+        isArabiziImproving = false
+    }
+
     private func copyArabiziOutput() {
         let text = formattedArabiziOutput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else {
@@ -346,6 +436,7 @@ struct MenuBarView: View {
         arabiziOutput = ""
         arabiziStatus = ""
         isArabiziRefining = false
+        isArabiziImproving = false
     }
 }
 

@@ -29,6 +29,19 @@ enum AppSecrets {
 
         return "gpt-5.4-mini"
     }
+
+    static var arabiziImproveModel: String {
+        let environmentModel = ProcessInfo.processInfo.environment["ARABIZI_IMPROVE_MODEL"] ?? ""
+        if !environmentModel.isEmpty {
+            return environmentModel
+        }
+
+        if let dotenvModel = Dotenv.value(named: "ARABIZI_IMPROVE_MODEL"), !dotenvModel.isEmpty {
+            return dotenvModel
+        }
+
+        return "gpt-5.4"
+    }
 }
 
 private enum Dotenv {

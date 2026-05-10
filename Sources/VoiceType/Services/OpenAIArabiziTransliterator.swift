@@ -98,6 +98,69 @@ enum OpenAIArabiziTransliterator {
         return ""
     }
 
+    static func improve(_ input: String, apiKey: String, model: String) async throws -> String {
+        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            return ""
+        }
+
+        let url = URL(string: "https://api.openai.com/v1/responses")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let body: [String: Any] = [
+            "model": model,
+            "instructions": """
+            Improve this Lebanese Arabic chat message.
+
+            Context:
+            - The text may contain Arabic, English, Arabizi leftovers, numbers, emoji, and punctuation.
+            - The user wants a natural Lebanese online-message result.
+
+            Rules:
+            - Return only the improved message.
+            - Keep it casual Lebanese, not Modern Standard Arabic.
+            - Fix obvious Yamli/Arabizi conversion mistakes and awkward word choices.
+            - Preserve the user's meaning, tone, punctuation, line breaks, emoji, URLs, @mentions, and hashtags.
+            - Keep common English words as English when that feels natural in Lebanese chat.
+            - Put spaces between Arabic and English words.
+            - Do not add tashkeel/diacritics.
+            - Do not explain.
+            """,
+            "input": trimmed,
+            "max_output_tokens": 1_000,
+            "temperature": 0.2
+        ]
+
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200..<300).contains(httpResponse.statusCode) else {
+            let message = String(data: data, encoding: .utf8) ?? "Unknown API error"
+            throw NSError(
+                domain: "OpenAIArabiziTransliterator",
+                code: 2,
+                userInfo: [NSLocalizedDescriptionKey: message]
+            )
+        }
+
+        let object = try JSONSerialization.jsonObject(with: data)
+        if let dictionary = object as? [String: Any] {
+            if let outputText = dictionary["output_text"] as? String {
+                return outputText.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+
+            if let extracted = extractText(from: dictionary) {
+                return extracted.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+        }
+
+        return ""
+    }
+
     private static func extractText(from value: Any) -> String? {
         if let string = value as? String {
             return string
