@@ -37,10 +37,6 @@ struct MenuBarView: View {
             }
 
             Spacer()
-
-            Text(selectedTab == .voice ? controller.mode.label : "Arabizi")
-                .font(.caption)
-                .foregroundStyle(.secondary)
         }
     }
 
@@ -57,6 +53,7 @@ struct MenuBarView: View {
         VStack(alignment: .leading, spacing: 14) {
             transcriptView
             controls
+            audioRecordingControls
             footer
         }
     }
@@ -108,28 +105,47 @@ struct MenuBarView: View {
         }
     }
 
+    @ViewBuilder
     private var footer: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            if let errorMessage = controller.errorMessage {
-                Text(errorMessage)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+        if let errorMessage = controller.errorMessage {
+            Text(errorMessage)
+                .font(.caption)
+                .foregroundStyle(.red)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
 
-            HStack {
-                Text("Option-Space toggles recording.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+    private var audioRecordingControls: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Divider()
 
-                Spacer()
-
-                Button("Clear") {
-                    controller.clearTranscript()
+            HStack(spacing: 8) {
+                Button {
+                    controller.toggleAudioRecording()
+                } label: {
+                    Label(audioRecordingButtonTitle, systemImage: audioRecordingButtonIcon)
+                        .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.plain)
-                .disabled(controller.transcript.isEmpty && controller.errorMessage == nil)
+                .keyboardShortcut("r", modifiers: [.control])
+                .disabled(
+                    controller.isStartingAudioRecording
+                        || (!controller.isAudioRecording && (controller.isRecording || controller.isFinishing))
+                )
+
+                if controller.lastAudioRecordingURL != nil && !controller.isAudioRecording {
+                    Button {
+                        controller.revealLastAudioRecording()
+                    } label: {
+                        Label("Reveal", systemImage: "folder")
+                            .frame(maxWidth: .infinity)
+                    }
+                }
             }
+
+            Text(audioRecordingStatusText)
+                .font(.caption)
+                .foregroundStyle(audioRecordingStatusColor)
+                .lineLimit(1)
         }
     }
 
@@ -229,7 +245,7 @@ struct MenuBarView: View {
             return "Listening..."
         }
 
-        return "Your transcript will appear here."
+        return "Press Option-Space to dictate."
     }
 
     private var primaryButtonTitle: String {
@@ -248,8 +264,40 @@ struct MenuBarView: View {
         controller.isRecording ? "stop.fill" : "mic.fill"
     }
 
+    private var audioRecordingButtonTitle: String {
+        if controller.isStartingAudioRecording {
+            return "Starting"
+        }
+
+        return controller.isAudioRecording ? "Stop Audio" : "Record Audio"
+    }
+
+    private var audioRecordingButtonIcon: String {
+        controller.isAudioRecording ? "stop.circle.fill" : "record.circle"
+    }
+
+    private var audioRecordingStatusText: String {
+        if controller.isStartingAudioRecording {
+            return "Preparing microphone..."
+        }
+
+        if controller.isAudioRecording {
+            return "Recording..."
+        }
+
+        if let lastAudioRecordingURL = controller.lastAudioRecordingURL {
+            return "Saved \(lastAudioRecordingURL.lastPathComponent)"
+        }
+
+        return "Control-R to record audio."
+    }
+
+    private var audioRecordingStatusColor: Color {
+        controller.isAudioRecording ? .red : .secondary
+    }
+
     private var statusColor: Color {
-        if controller.isRecording {
+        if controller.isRecording || controller.isAudioRecording {
             return .red
         }
 
