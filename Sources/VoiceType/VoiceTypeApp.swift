@@ -10,7 +10,11 @@ struct VoiceTypeApp: App {
         MenuBarExtra {
             MenuBarView(controller: controller)
         } label: {
-            Image(systemName: controller.isRecording ? "mic.fill" : "mic")
+            Image(
+                systemName: controller.isStartingAudioRecording || controller.isAudioRecording
+                    ? "record.circle.fill"
+                    : (controller.isRecording ? "mic.fill" : "mic")
+            )
         }
         .menuBarExtraStyle(.window)
     }

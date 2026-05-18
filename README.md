@@ -10,12 +10,16 @@ Press `Option-Space` from anywhere to start recording, speak naturally, then pre
 
 That keeps the flow simple: shortcut, speak, stop, paste.
 
+Press `Control-R` from anywhere to start a raw audio recording, then press `Control-R` again to stop. VoiceType saves the file as `.m4a` in `~/Documents/VoiceType Recordings/`.
+
 ## MVP behavior
 
 - Menu-bar app with Start, Stop, Copy, and Settings.
 - Option-Space toggles recording.
+- Control-R toggles raw audio recording.
 - Final transcript is copied to the clipboard when recording stops.
-- Settings include Fast, Accurate, and Polished modes.
+- Audio recordings are saved to `~/Documents/VoiceType Recordings/`.
+- Dictation uses the fast mode.
 - Arabizi tab uses Yamli for live Lebanese/Arabic transliteration, falls back to an OpenAI model if Yamli is unavailable, and includes an optional stronger "Improve with LLM" pass.
 - Start at login is implemented with a LaunchAgent for the packaged app.
 
@@ -60,7 +64,7 @@ The first launch should prompt for microphone permission.
 ./Scripts/install-app.sh
 ```
 
-Open Settings from the menu-bar gear button, save your OpenAI API key, and enable Start at login.
+Open Settings from the menu-bar gear button to change language or Start at login.
 
 ## Notes
 

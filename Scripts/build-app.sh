@@ -44,7 +44,7 @@ cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
     <key>LSUIElement</key>
     <true/>
     <key>NSMicrophoneUsageDescription</key>
-    <string>VoiceType records your speech so it can transcribe it to clipboard text.</string>
+    <string>VoiceType uses the microphone to transcribe speech and save audio recordings.</string>
 </dict>
 </plist>
 PLIST
